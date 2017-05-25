@@ -1,34 +1,69 @@
-
 // Initialization 
-  Tf=ZZZZ; 
-  Nx=ZZZZ; 
+  Ti=1; 
+  Tf=10; 
+  Nx=9; 
   state=[1 : Nx]; 
+  xref = 5;
+  
+function B=get_B(x)
+    if x==1 then
+        B = [1];
+    elseif x==2 then
+        B = [0, 1];
+    elseif x==Nx then
+        B = [-1];
+    elseif x==Nx-1 then
+        B = [0, -1];
+    else
+        B = [-1, 0, 1];
+    end
+endfunction
+
+function proba=p(w)
+    proba=0.5;
+endfunction
+
+function cost=cost_t(x,u)
+    cost=0;
+endfunction
+
   // Initialization of the matrix used to store Bellman values 
   V=ones(Tf,Nx) * %inf; 
+  // Initailization of the control history
+  U=ones(Tf,Nx) * %inf;
   // Compute Bellman function at final time 
-  V(Tf,:)=ZZZZ 
+  V(Tf,:)=(state - xref) .^ 2;
   // make a time backward loop 
   for t=Tf - 1 :  -1 :  Ti do 
     // make a loop on possible states 
-    for x=ZZZZ do 
+    for x=state do 
       // make a loop on admissible controls (for state x) to obtain the best possible 
       // expected cost starting from state x in cost_x 
-      cost_x=%inf 
-      for u=ZZZZ do 
+      cost_x=%inf;
+      optimal_control=%inf;
+      for u=get_B(x) do 
         // make a loop on the random perturbation to compute the expected 
         // cost cost_x_u 
-        for w=ZZZZ do 
+        cost_x_u = 0;
+        for w=[-1, 1] do 
           // for a given perturbation compute the cost associated to 
           // control u and state x using the instantaneous cost and the 
           // Bellman function at time t+1 
-          cost_x_u_w=(cost_t(x,u) + V(t + 1,ZZZZ)) * p(w) 
+          cost_x_u_w=(cost_t(x,u) + V(t + 1,x + u + w)) * p(w);
+          cost_x_u = cost_x_u + cost_x_u_w;
         end 
         // update cost_x_u with cost_x_u_w 
         // compare the current cost_x_u to cost_x and 
         // update cost_x if cost_x_u is better than the current cost_x 
-        // 
+        cost_x = min(cost_x, cost_x_u);
+        if cost_x_u < cost_x then
+            cost_x = cost_x_u;
+            optimal_control = u;
+        end
       end 
       // store cost_x in V(t,x) 
+      V(t,x)=cost_x;
+      U(t,x)=optimal_control;
     end 
   end 
   
